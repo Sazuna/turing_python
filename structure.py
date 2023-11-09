@@ -164,13 +164,13 @@ class Imprime(Instruction):
 		res += super().nt() + "print(' '*POS + '^')"
 		return res
 
-class Accolade:
+class Accolade(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, indent: int = 0):
 		super().__init__(instruction_n, line_n, indent)
 	def to_string(self) -> str:
 		return "}"
 
-class Hashtag:
+class Hashtag(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, indent: int = 0):
 		super().__init__(instruction_n, line_n)
 	def to_string(self) -> str:
