@@ -45,17 +45,26 @@ class Root(Instruction):
 		res += "MAX=100\n"
 		res += "BANDE = [0] * MAX\n"
 		return res
+	def print_program(self, ins: Instruction = None):
+		if ins == None:
+			ins = self
+		for child in ins.children:
+			print(child.to_string())
+			if type(child) in (Si0, Si1, Boucle):
+				self.print_program(child)
 	
 class Si0(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, indent: int = 0):
 		super().__init__(instruction_n, line_n, indent)
 		self.children: List(Instruction) = []
+	def to_string(self) -> str:
+		return "si (0)"
 	def add_child(self, child):
 		self.children.append(child)
 	def to_python(self) -> str:
 		return super().nt() + "if BANDE[POS] == 0:"
 	def valid(self):
-		for child in children[:-1]:
+		for child in self.children[:-1]:
 			assert(type(child) != Accolade)
 		assert(type(self.children[-1]) == Accolade)
 
@@ -63,7 +72,7 @@ class Si1(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, indent: int = 0):
 		super().__init__(instruction_n, line_n, indent)
 		self.children: List(Instruction) = []
-	def to_string() -> str:
+	def to_string(self) -> str:
 		return "si (1)"
 	def add_child(self, child):
 		self.children.append(child)
@@ -77,8 +86,8 @@ class Si1(Instruction):
 class Boucle(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, indent: int = 0):
 		super().__init__(instruction_n, line_n, indent)
-		children: List(Instruction) = []
-	def to_string() -> str:
+		self.children: List(Instruction) = []
+	def to_string(self) -> str:
 		return "boucle"
 	def add_child(self, child):
 		self.children.append(child)

@@ -15,6 +15,7 @@ def main(file):
 	print(tokens)
 	res = entities.start(tokens)
 	print(res)
+	print(res[1].print_program())
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
