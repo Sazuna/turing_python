@@ -18,7 +18,11 @@ class Condition:
 			sign = "="
 		else:
 			sign = "∈ "
-		return "{" + f"I = {self.I} ∧ B[P] {sign} {self.BP} ∧ P = {self.P}" + "}"
+		if self.P < 0:
+			sign2 = ""
+		else:
+			sigh2 = "+"
+		return "{" + f"I = {self.I} ∧ B[P] {sign} {self.BP} ∧ P = P0 {sign2} {self.P}" + "}"
 
 class Instruction:
 	def __init__(self, instruction_n: int, line_n: int, indent: int = 0):
@@ -45,13 +49,16 @@ class Root(Instruction):
 		res += "MAX=100\n"
 		res += "BANDE = [0] * MAX\n"
 		return res
-	def print_program(self, ins: Instruction = None):
+	def print_program(self, ins: Instruction = None, indent: int = 0):
 		if ins == None:
 			ins = self
+		print(" "*indent, end="")
 		for child in ins.children:
-			print(child.to_string())
+			print(child.to_string(), end=" ")
 			if type(child) in (Si0, Si1, Boucle):
-				self.print_program(child)
+				print("")
+				self.print_program(child, indent + 1)
+		print("")
 	
 class Si0(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, indent: int = 0):
