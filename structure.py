@@ -229,13 +229,3 @@ class Hashtag(Instruction):
 		return "#"
 	def to_python(self, indent: int) -> str:
 		return ""
-
-def main():
-	condition = Condition(0, {0,1}, 0)
-	print(condition.to_string())
-	si0 = Si0(3, 20)
-	print(si0.instruction_n)
-	print(si0.to_python(0))
-
-if __name__ == "__main__":
-	main()

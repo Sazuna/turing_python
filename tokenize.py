@@ -39,4 +39,3 @@ def make_tokens(lines: List[str], lines_number: List[int]):
 			instruction_n += 1
 			tokens.append((token, line_n, instruction_n))
 	return tokens
-	
