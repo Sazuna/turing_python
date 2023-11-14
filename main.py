@@ -17,6 +17,12 @@ def main(file):
 	# (without comments etc) and better indentation.
 	print(turing.program_to_python()) # Program converted to python.
 
+	turing.gen_pre_pos_conditions()
+	dico = turing.get_pre_pos_conditions()
+
+	for i in range(1, len(dico)+1):
+		print(i, "pre-condition:",dico[i][0], "post-condition:",dico[i][1])
+
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
 		print("Il manque le fichier TS.")
