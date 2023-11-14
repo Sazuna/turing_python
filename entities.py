@@ -26,7 +26,6 @@ def start(tokens):
 	return program
 
 def call(token, tokens, program, indent: int, fin_boucle: bool):
-	print(token[0], fin_boucle)
 	# token is composed as (token, line_number, instruction_number)
 	match token[0]:
 		case '0':
@@ -57,7 +56,6 @@ def call(token, tokens, program, indent: int, fin_boucle: bool):
 			indent += 1
 			return si1(token, tokens, si_1, indent, fin_boucle)
 		case 'fin':
-			print("fin boucle:", fin_boucle)
 			program.add_child(Fin(token[2], token[1], indent, fin_boucle))
 			return fin(tokens, program, indent, fin_boucle)
 		case '}':
