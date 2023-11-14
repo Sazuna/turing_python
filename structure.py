@@ -82,11 +82,16 @@ class Instruction:
 			elif type(self.prev_sibling()) in (Si0, Si1):
 				self.pre_condition.set_P(self.prev_sibling().post_condition.P)
 				self.pre_condition.set_prefixP(" + m")
-				self.pre_condition.set_BP(self.prev_sibling().post_condition.BP)
+				#self.pre_condition.set_BP(self.prev_sibling().post_condition.BP)
+				self.pre_condition.set_BP({0, 1})
 			else: # If has previous sibling that is not Boucle, Si0, Si1:
-				self.pre_condition.set_P(self.parent.post_condition.P)
-				self.pre_condition.set_BP(self.parent.post_condition.BP)
+				self.pre_condition.set_P(self.prev_sibling().post_condition.P)
+				self.pre_condition.set_BP(self.prev_sibling().post_condition.BP)
 				self.pre_condition.set_I(self.instruction_n)
+	def get_python_pre_assertion(self, indent) -> str:
+		if self.pre_condition.BP in ('0', '1'):
+			return self.nt(indent) + f"assert(BANDE[POS] == {self.pre_condition.BP})"
+		return ""
 
 class Root(Instruction):
 	def __init__(self):
@@ -151,7 +156,8 @@ class Si0(Instruction):
 	def add_child(self, child):
 		self.children.append(child)
 	def to_python(self, indent: int) -> str:
-		return super().nt(indent) + "if BANDE[POS] == 0:"
+		res = super().get_python_pre_assertion(indent)
+		return res + super().nt(indent) + "if BANDE[POS] == 0:"
 	def valid(self):
 		for child in self.children[:-1]:
 			assert(type(child) != Accolade)
@@ -170,7 +176,8 @@ class Si1(Instruction):
 	def add_child(self, child):
 		self.children.append(child)
 	def to_python(self, indent) -> str:
-		return super().nt(indent) + "if BANDE[POS] == 1:"
+		res = super().get_python_pre_assertion(indent)
+		return res + super().nt(indent) + "if BANDE[POS] == 1:"
 	def valid(self):
 		for child in children[:-1]:
 			assert(type(child) != Accolade)
@@ -206,7 +213,8 @@ class Boucle(Instruction):
 						return True
 		return False
 	def to_python(self, indent: int) -> str:
-		return super().nt(indent) + "while True:"
+		res = super().get_python_pre_assertion(indent)
+		return res + super().nt(indent) + "while True:"
 	def gen_post_condition(self):
 		self.post_condition.set_BP(self.pre_condition.BP)
 		self.post_condition.set_P(self.pre_condition.P)
@@ -219,10 +227,11 @@ class Fin(Instruction):
 	def to_string(self) -> str:
 		return "fin"
 	def to_python(self, indent: int) -> str:
+		res = super().get_python_pre_assertion(indent)
 		if self.fin_boucle:
-			return super().nt(indent) + "break"
+			return res + super().nt(indent) + "break"
 		else:
-			return super().nt(indent) + "sys.exit(0)"
+			return res + super().nt(indent) + "sys.exit(0)"
 	def gen_post_condition(self):
 		self.post_condition.set_BP(self.pre_condition.BP)
 		self.post_condition.set_P(self.pre_condition.P)
@@ -242,7 +251,8 @@ class Zero(Instruction):
 	def to_string(self) -> str:
 		return "0"
 	def to_python(self, indent: int) -> str:
-		return super().nt(indent) + "BANDE[POS] = 0"
+		res = super().get_python_pre_assertion(indent)
+		return res + super().nt(indent) + "BANDE[POS] = 0"
 	def gen_post_condition(self): 
 		self.post_condition.set_BP("0")
 		self.post_condition.set_P(self.pre_condition.P)
@@ -254,7 +264,8 @@ class Un(Instruction):
 	def to_string(self) -> str:
 		return "1"
 	def to_python(self, indent: int) -> str:
-		return super().nt(indent) + "BANDE[POS] = 1"
+		res = super().get_python_pre_assertion(indent)
+		return res + super().nt(indent) + "BANDE[POS] = 1"
 	def gen_post_condition(self):
 		self.post_condition.set_BP("1")
 		self.post_condition.set_P(self.pre_condition.P)
@@ -266,7 +277,8 @@ class Gauche(Instruction):
 	def to_string(self) -> str:
 		return "G"
 	def to_python(self, indent: int) -> str:
-		return super().nt(indent) + "POS -= 1"
+		res = super().get_python_pre_assertion(indent)
+		return res + super().nt(indent) + "POS -= 1"
 	def gen_post_condition(self):
 		self.post_condition.set_BP('{0, 1}')
 		self.post_condition.set_P(self.pre_condition.P - 1)
@@ -279,7 +291,8 @@ class Droite(Instruction):
 	def to_string(self) -> str:
 		return "D"
 	def to_python(self, indent: int) -> str:
-		return super().nt(indent) + "POS += 1"
+		res = super().get_python_pre_assertion(indent)
+		return res + super().nt(indent) + "POS += 1"
 	def gen_post_condition(self):
 		self.post_condition.set_BP('{0, 1}')
 		self.post_condition.set_P(self.pre_condition.P + 1)
@@ -291,7 +304,8 @@ class Pause(Instruction):
 	def to_string(self) -> str:
 		return "P"
 	def to_python(self, indent: int) -> str:
-		return super().nt(indent) + "input()"
+		res = super().get_python_pre_assertion(indent)
+		return res + super().nt(indent) + "input()"
 	def gen_post_condition(self):
 		self.post_condition.set_BP(self.pre_condition.BP)
 		self.post_condition.set_P(self.pre_condition.P)
@@ -303,7 +317,8 @@ class Imprime(Instruction):
 	def to_string(self) -> str:
 		return "I"
 	def to_python(self, indent: int) -> str:
-		res = super().nt(indent) + "print(''.join([str(x) for x in BANDE]))"
+		res = super().get_python_pre_assertion(indent)
+		res += super().nt(indent) + "print(''.join([str(x) for x in BANDE]))"
 		res += super().nt(indent) + "print(' '*POS + '^')"
 		return res
 	def gen_post_condition(self):
@@ -317,7 +332,9 @@ class Accolade(Instruction):
 	def to_string(self) -> str:
 		return "}"
 	def to_python(self, indent: int) -> str:
-		return ""
+		res = super().get_python_pre_assertion(indent)
+		return res
+		return "" # If we do not want to print pre-assertion before }
 	def gen_post_condition(self):
 		self.post_condition.set_BP(self.pre_condition.BP)
 		self.post_condition.set_P(self.pre_condition.P)
@@ -335,7 +352,8 @@ class Hashtag(Instruction):
 	def to_string(self) -> str:
 		return "#"
 	def to_python(self, indent: int) -> str:
-		return ""
+		res = super().get_python_pre_assertion(indent)
+		return res
 	def to_string(self) -> str:
 		return ""
 	def gen_post_condition(self):

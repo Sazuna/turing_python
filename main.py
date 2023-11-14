@@ -15,6 +15,7 @@ def main(file):
 	turing = entities.start(tokens) # Create the Structure of the Machine Turing and makes sure it is valid.
 	print(turing.print_program()) # Simplified version of the program
 	# (without comments etc) and better indentation.
+
 	print(turing.program_to_python()) # Program converted to python.
 
 	turing.gen_pre_pos_conditions()
@@ -22,6 +23,7 @@ def main(file):
 
 	for i in range(1, len(dico)+1):
 		print(i, "pre-condition:",dico[i][0], "post-condition:",dico[i][1])
+	print(turing.program_to_python()) # Program converted to python but with pre-assertions generated.
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
