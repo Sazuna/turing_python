@@ -12,10 +12,10 @@ def main(file):
 		program = f.read()
 	program, lines_number = tokenize.clean_lines(program)
 	tokens = tokenize.make_tokens(program, lines_number)
-	print(tokens)
-	res = entities.start(tokens)
-	print(res)
-	print(res[1].print_program())
+	turing = entities.start(tokens) # Create the Structure of the Machine Turing and makes sure it is valid.
+	print(turing.print_program()) # Simplified version of the program
+	# (without comments etc) and better indentation.
+	print(turing.program_to_python()) # Program converted to python.
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2:

@@ -3,7 +3,7 @@ from typing import List
 from dataclasses import dataclass
 
 class Condition:
-	def __init__(self, I: int =-1, BP = {0,1}, P: int =-1):
+	def __init__(self, I: int =-1, BP = {0,1}, P: int = 0):
 		self.I = I
 		self.BP = BP
 		self.P = P
@@ -21,7 +21,7 @@ class Condition:
 		if self.P < 0:
 			sign2 = ""
 		else:
-			sigh2 = "+"
+			sign2 = "+"
 		return "{" + f"I = {self.I} ∧ B[P] {sign} {self.BP} ∧ P = P0 {sign2} {self.P}" + "}"
 
 class Instruction:
@@ -41,6 +41,15 @@ class Root(Instruction):
 		self.children: List(Instruction) = []
 	def add_child(self, child):
 		self.children.append(child)
+	def program_to_python(self, ins: Instruction = None):
+		if ins == None:
+			ins = self
+		res = ""
+		res += ins.to_python()
+		if type(ins) in (Root, Si0, Si1, Boucle):
+			for child in ins.children:
+				res += self.program_to_python(child)
+		return res
 	def to_python(self) -> str:
 		res = "#!/bin/python3\n"
 		res += "#-*- coding: utf-8 -*-\n"
@@ -119,7 +128,7 @@ class Boucle(Instruction):
 		return super().nt() + "while True:"
 
 class Fin(Instruction):
-	def __init__(self, instruction_n: int, line_n: int, indent: int = 0, fin_boucle: bool = False):
+	def __init__(self, instruction_n: int, line_n: int, indent: int = 0, fin_boucle: bool = True):
 		super().__init__(instruction_n, line_n, indent)
 		self.fin_boucle = fin_boucle
 	def to_string(self) -> str:
@@ -185,12 +194,16 @@ class Accolade(Instruction):
 		super().__init__(instruction_n, line_n, indent)
 	def to_string(self) -> str:
 		return "}"
+	def to_python(self) -> str:
+		return ""
 
 class Hashtag(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, indent: int = 0):
-		super().__init__(instruction_n, line_n)
+		super().__init__(instruction_n, line_n, indent)
 	def to_string(self) -> str:
 		return "#"
+	def to_python(self) -> str:
+		return ""
 
 def main():
 	condition = Condition(0, {0,1}, 0)
