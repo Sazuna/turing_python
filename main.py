@@ -3,6 +3,8 @@
 
 import sys
 
+import os
+
 import tokenize
 
 import entities
@@ -13,17 +15,29 @@ def main(file):
 	program, lines_number = tokenize.clean_lines(program)
 	tokens = tokenize.make_tokens(program, lines_number)
 	turing = entities.start(tokens) # Create the Structure of the Machine Turing and makes sure it is valid.
-	print(turing.print_program()) # Simplified version of the program
-	# (without comments etc) and better indentation.
 
-	print(turing.program_to_python()) # Program converted to python.
+	#print(turing.print_program()) # Simplified version of the program
+	# (without comments etc) and better indentation.
+	# TODO: repair this function (it's broken now)
+
+	python_file = os.path.basename(file) + ".py"
+	#print(turing.program_to_python()) # Program converted to python.
+	with open(python_file, 'w') as f:
+		f.write(turing.program_to_python())
 
 	turing.gen_pre_pos_conditions()
-	dico = turing.get_pre_pos_conditions()
 
-	for i in range(1, len(dico)+1):
-		print(i, "pre-condition:",dico[i][0], "post-condition:",dico[i][1])
-	print(turing.program_to_python()) # Program converted to python but with pre-assertions generated.
+	conditions_file = os.path.basename(file) + ".conditions.tsv"
+
+	dico = turing.get_pre_pos_conditions()
+	with open(conditions_file, 'w') as f:
+		f.write('instruction_n\tpre-condition\tpost_condition\n')
+		for i in range(1, len(dico)+1):
+			f.write(str(i) + '\t' + dico[i][0] + '\t' + dico[i][1] + '\n')
+
+	assertions_file = os.path.basename(file) + ".assertions.py"
+	with open(assertions_file, 'w') as f:
+		f.write(turing.program_to_python()) # Program converted to python but with pre-assertions generated.
 
 if __name__ == "__main__":
 	if len(sys.argv) < 2:
