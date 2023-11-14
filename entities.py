@@ -111,7 +111,7 @@ def si0(old_token, tokens, program):
 	token = next_token(tokens)
 	return accolade[:-1] + call(token, tokens, program) # suppression du dernier caractere
 
-def si1(tokens, program):
+def si1(old_token, tokens, program):
 	token = next_token(tokens)
 	accolade = call(token, tokens, program)
 	if len(accolade) < 1 or accolade[-1] != '}':
