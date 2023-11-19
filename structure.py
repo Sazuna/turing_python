@@ -218,6 +218,7 @@ class Si0(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, parent: Instruction = None):
 		super().__init__(instruction_n, line_n, parent)
 		self.children: List(Instruction) = []
+		self.pos_condition_else = None
 	def to_string(self) -> str:
 		return "si (0)"
 	def add_child(self, child):
@@ -230,15 +231,23 @@ class Si0(Instruction):
 			assert(type(child) != Accolade)
 		assert(type(self.children[-1]) == Accolade)
 	def gen_post_condition(self):
-		self.post_condition.set_BP(0)
-		self.post_condition.set_P(self.pre_condition.P)
-		self.post_condition.set_I(self.pre_condition.I + 1)
-		self.post_condition.set_prefixP(self.pre_condition.prefixP)
+		if 0 in self.pre_condition.BP:
+			self.post_condition.set_BP(0)
+			self.post_condition.set_P(self.pre_condition.P)
+			self.post_condition.set_I(self.pre_condition.I + 1)
+			self.post_condition.set_prefixP(self.pre_condition.prefixP)
+		if 1 in self.pre_condition.BP:
+			I = self.next_sibling().instruction_n
+			BP = 1
+			P = self.pre_condition.P
+			prefixP = self.pre_condition.prefixP
+			self.post_condition_else = Condition(I, BP, P, prefixP)
 
 class Si1(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, parent: Instruction = None):
 		super().__init__(instruction_n, line_n, parent)
 		self.children: List(Instruction) = []
+		self.pos_condition_else = None
 	def to_string(self) -> str:
 		return "si (1)"
 	def add_child(self, child):
@@ -251,10 +260,17 @@ class Si1(Instruction):
 			assert(type(child) != Accolade)
 		assert(type(self.children[-1]) == Accolade)
 	def gen_post_condition(self):
-		self.post_condition.set_BP(1)
-		self.post_condition.set_P(self.pre_condition.P)
-		self.post_condition.set_I(self.pre_condition.I + 1)
-		self.post_condition.set_prefixP(self.pre_condition.prefixP)
+		if 1 in self.pre_condition.BP:
+			self.post_condition.set_BP(1)
+			self.post_condition.set_P(self.pre_condition.P)
+			self.post_condition.set_I(self.pre_condition.I + 1)
+			self.post_condition.set_prefixP(self.pre_condition.prefixP)
+		if 0 in self.pre_condition.BP:
+			I = self.next_sibling().instruction_n
+			BP = 0
+			P = self.pre_condition.P
+			prefixP = self.pre_condition.prefixP
+			self.post_condition_else = Condition(I, BP, P, prefixP)
 
 
 class Fin(Instruction):
