@@ -39,6 +39,11 @@ class Condition:
 			assert len(self.P) > 1
 			res += f"+ {self.pos_to_string()}"
 		return res
+	def to_string_else(self, or_condition): # for Si0 and Si1, 2 possible post-conditions
+		res = self.to_string()[:-1]
+		res += " ∪ "
+		res += or_condition.to_string()[1:]
+		return res
 	def pos_to_string(self):
 		P = sorted(self.P)
 		res = f"({P[0]}"
@@ -152,6 +157,10 @@ class Instruction:
 			self.pre_condition.set_I(self.instruction_n)
 			for prev in self.previous[1:]:
 				self.pre_condition.or_condition(prev.post_condition)
+			for prev in self.previous:
+				if type(prev) in (Si0, Si1):
+					# if Si0 or Si1 test were not valid
+					self.pre_condition.or_condition(prev.post_condition_else)
 		if type(self) == Boucle:
 			self.pre_condition.set_prefixP(" + m")
 
@@ -207,7 +216,11 @@ class Root(Instruction):
 			ins = self
 		dico = {}
 		for child in ins.children:
-			dico[child.instruction_n] = (child.to_string(), child.pre_condition.to_string(), child.post_condition.to_string())
+			if type(child) in (Si0, Si1):
+				child_post_cond = child.post_condition.to_string_else(child.post_condition_else)
+			else:
+				child_post_cond = child.post_condition.to_string()
+			dico[child.instruction_n] = (child.to_string(), child.pre_condition.to_string(), child_post_cond)
 			if type(child) in (Si0, Si1, Boucle):
 				child_pre_pos_cond = self.get_pre_pos_conditions(child)
 				for key in child_pre_pos_cond:
@@ -456,8 +469,6 @@ class Hashtag(Instruction):
 	def to_python(self, indent: int) -> str:
 		res = super().get_python_pre_assertion(indent)
 		return res
-	def to_string(self) -> str:
-		return ""
 	def gen_post_condition(self):
 		self.post_condition.set_BP(self.pre_condition.BP)
 		self.post_condition.set_P(self.pre_condition.P)
