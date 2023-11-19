@@ -3,14 +3,17 @@ from typing import List
 from dataclasses import dataclass
 
 class Condition:
-	def __init__(self, I: int = 0, BP = {0,1}, P = 0):
+	def __init__(self, I: int = 0, BP = {0,1}, P = 0, prefixP = ""):
 		self.I = I
 		if type(BP) == set:
 			self.BP = BP
 		else:
 			self.BP = {BP}
-		self.P = {P}
-		self.prefixP = "" # + m > means that there was a loop and
+		if type(P) == set:
+			self.P = P
+		else:
+			self.P = {P}
+		self.prefixP = prefixP # + m > means that there was a loop and
 				  # the Position became ambiguous.
 	def set_P(self, P:int):
 		self.P = P
@@ -46,6 +49,8 @@ class Condition:
 	def or_condition(self, condition):
 		self.P = self.P.union(condition.P)
 		self.BP = self.BP.union(condition.BP)
+	def copy(self):
+		return Condition(self.I, self.BP, self.P, self.prefixP)
 
 class Instruction:
 	def __init__(self, instruction_n: int, line_n: int, parent = None):
@@ -96,7 +101,7 @@ class Instruction:
 		prev_sibl = self.prev_sibling()
 		if prev_sibl != None:
 			if type(prev_sibl) == Boucle:
-				fins = prev_sibl.get_fins()
+				fins = prev_sibl.get_fins(prev_sibl.children)
 				self.previous.extend(fins)
 			elif type(prev_sibl) in (Si0, Si1):
 				self.previous.append(prev_sibl)
@@ -108,8 +113,8 @@ class Instruction:
 		else:
 			if self.parent != None:
 				self.previous.append(self.parent)
-		print(self.previous)
 	# Same function for every inherited classes
+	"""
 	def gen_pre_condition(self):
 		if self.prev_sibling() == None:
 			if self.parent != None:
@@ -133,6 +138,23 @@ class Instruction:
 				self.pre_condition.set_BP(self.prev_sibling().post_condition.BP)
 				self.pre_condition.set_I(self.instruction_n)
 				self.pre_condition.set_prefixP(self.prev_sibling().post_condition.prefixP)
+	"""
+	# Function that fusions pre-conditions of every possible previous member.
+	def gen_pre_condition(self):
+		self.gen_previous()
+		if len(self.previous) == 0:
+			self.pre_condition.set_P(self.parent.post_condition.P)
+			self.pre_condition.set_BP(self.parent.post_condition.BP)
+			self.pre_condition.set_I(self.instruction_n)
+			self.pre_condition.set_prefixP(self.parent.post_condition.prefixP)
+		else:
+			self.pre_condition = self.previous[0].post_condition.copy()
+			self.pre_condition.set_I(self.instruction_n)
+			for prev in self.previous[1:]:
+				self.pre_condition.or_condition(prev.post_condition)
+		if type(self) == Boucle:
+			self.pre_condition.set_prefixP(" + m")
+
 	def get_python_pre_assertion(self, indent) -> str:
 		if self.pre_condition.BP in ('0', '1'):
 			return self.nt(indent) + f"assert(BANDE[POS] == {self.pre_condition.BP})"
@@ -185,7 +207,7 @@ class Root(Instruction):
 			ins = self
 		dico = {}
 		for child in ins.children:
-			dico[child.instruction_n] = (child.pre_condition.to_string(), child.post_condition.to_string())
+			dico[child.instruction_n] = (child.to_string(), child.pre_condition.to_string(), child.post_condition.to_string())
 			if type(child) in (Si0, Si1, Boucle):
 				child_pre_pos_cond = self.get_pre_pos_conditions(child)
 				for key in child_pre_pos_cond:
@@ -291,7 +313,7 @@ class Boucle(Instruction):
 				fins.append(child)
 			else:
 				if type(child) in (Si0, Si1, Boucle):
-					self.get_fins(children, fins)
+					self.get_fins(child.children, fins)
 		return fins
 	def to_python(self, indent: int) -> str:
 		res = super().get_python_pre_assertion(indent)

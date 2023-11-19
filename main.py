@@ -31,9 +31,9 @@ def main(file):
 
 	dico = turing.get_pre_pos_conditions()
 	with open(conditions_file, 'w') as f:
-		f.write('instruction_n\tpre-condition\tpost_condition\n')
+		f.write('instruction_n\tinstruction\tpre-condition\tpost_condition\n')
 		for i in range(1, len(dico)+1):
-			f.write(str(i) + '\t' + dico[i][0] + '\t' + dico[i][1] + '\n')
+			f.write(f"{i}\t{dico[i][0]}\t{dico[i][1]}\t{dico[i][2]}\n")
 
 	assertions_file = os.path.basename(file) + ".assertions.py"
 	with open(assertions_file, 'w') as f:
