@@ -19,7 +19,7 @@ def start(tokens):
 	if res[-1] != "#":
 		print("Terminé sans avoir rencontré de #.")
 		invalide(("#", -1, -1))
-	if "fin" in res:
+	if "fin" in re.sub(r'(ok)+fin', '', res):
 		print("fin recontré à l'extérieur d'une boucle, le programme pourrait s'arrêter avant la fin.")
 	print("Programme valide.")
 
