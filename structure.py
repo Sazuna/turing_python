@@ -3,29 +3,49 @@ from typing import List
 from dataclasses import dataclass
 
 class Condition:
-	def __init__(self, I: int = 0, BP = {0,1}, P: int = 0):
+	def __init__(self, I: int = 0, BP = {0,1}, P = 0):
 		self.I = I
-		self.BP = BP
-		self.P = P
-		self.prefixP = ""
+		if type(BP) == set:
+			self.BP = BP
+		else:
+			self.BP = {BP}
+		self.P = {P}
+		self.prefixP = "" # + m > means that there was a loop and
+				  # the Position became ambiguous.
 	def set_P(self, P:int):
 		self.P = P
 	def set_I(self, I):
 		self.I = I
 	def set_BP(self, BP):
-		self.BP = BP
+		if type(BP) == set:
+			self.BP = BP
+		else:
+			self.BP = {BP}
 	def set_prefixP(self, prefixP):
 		self.prefixP = prefixP
 	def to_string(self) -> str:
-		if self.BP in ["0", "1"]:
-			sign = "="
-		else:
-			sign = "∈ "
-		if self.P < 0:
-			sign2 = ""
-		else:
-			sign2 = "+"
-		return "{" + f"I = {self.I} ∧ B[P] {sign} {self.BP} ∧ P = P0{self.prefixP} {sign2} {self.P}" + "}"
+		res = "{" + f"I = {self.I} ∧ B[P] ∈ {self.BP} ∧ P = P0{self.prefixP} "
+		if len(self.P) == 1:
+			P = sorted(self.P)
+			if P[0] > 0:
+				res += f"+ {P[0]}"
+			elif P[0] < 0:
+				res += f"- {-P[0]}"
+			res += "}"
+		else: # > 1
+			assert len(self.P) > 1
+			res += f"+ {self.pos_to_string()}"
+		return res
+	def pos_to_string(self):
+		P = sorted(self.P)
+		res = f"({P[0]}"
+		for POS in P[1:]:
+			res += f" ∪ {POS}"
+		return res + ")"
+	# simplify two conditions
+	def or_condition(self, condition):
+		self.P = self.P.union(condition.P)
+		self.BP = self.BP.union(condition.BP)
 
 class Instruction:
 	def __init__(self, instruction_n: int, line_n: int, parent = None):
@@ -34,6 +54,7 @@ class Instruction:
 		self.pre_condition: Condition = Condition(I=instruction_n)
 		self.post_condition: Condition = Condition()
 		self.parent = parent
+		self.previous = [] # List of Instructions that might lead to this Instruction
 	# used to indent python programs
 	def nt(self, indent: int) -> str:
 		return '\n' + '\t' * indent
@@ -45,6 +66,11 @@ class Instruction:
 			return None
 		prev_index = self_index - 1
 		prev_sibling = self.parent.children[prev_index]
+		return prev_sibling
+	def prev_sibling_or_parent(self):
+		prev_sibl = self.prev_sibling()
+		if prev_sibling == None:
+			return self.parent
 		return prev_sibling
 	def next_sibling(self): # Returns Instruction
 		if self.parent == None:
@@ -66,6 +92,23 @@ class Instruction:
 			parent = parent.parent
 		end_boucle = parent.next_sibling()
 		return end_boucle
+	def gen_previous(self):
+		prev_sibl = self.prev_sibling()
+		if prev_sibl != None:
+			if type(prev_sibl) == Boucle:
+				fins = prev_sibl.get_fins()
+				self.previous.extend(fins)
+			elif type(prev_sibl) in (Si0, Si1):
+				self.previous.append(prev_sibl)
+				last_instruction_of_si = prev_sibl.children[-1]
+				assert type(last_instruction_of_si) == Accolade
+				self.previous.append(last_instruction_of_si)
+			else:
+				self.previous.append(prev_sibl)
+		else:
+			if self.parent != None:
+				self.previous.append(self.parent)
+		print(self.previous)
 	# Same function for every inherited classes
 	def gen_pre_condition(self):
 		if self.prev_sibling() == None:
@@ -74,6 +117,7 @@ class Instruction:
 				self.pre_condition.set_P(self.parent.post_condition.P)
 				self.pre_condition.set_BP(self.parent.post_condition.BP)
 				self.pre_condition.set_I(self.instruction_n)
+				self.pre_condition.set_prefixP(self.parent.post_condition.prefixP)
 		else:
 			if type(self.prev_sibling()) == Boucle:
 				self.pre_condition.set_P(self.prev_sibling().post_condition.P) # We do not know where P is at this point.
@@ -88,6 +132,7 @@ class Instruction:
 				self.pre_condition.set_P(self.prev_sibling().post_condition.P)
 				self.pre_condition.set_BP(self.prev_sibling().post_condition.BP)
 				self.pre_condition.set_I(self.instruction_n)
+				self.pre_condition.set_prefixP(self.prev_sibling().post_condition.prefixP)
 	def get_python_pre_assertion(self, indent) -> str:
 		if self.pre_condition.BP in ('0', '1'):
 			return self.nt(indent) + f"assert(BANDE[POS] == {self.pre_condition.BP})"
@@ -163,9 +208,10 @@ class Si0(Instruction):
 			assert(type(child) != Accolade)
 		assert(type(self.children[-1]) == Accolade)
 	def gen_post_condition(self):
-		self.post_condition.set_BP("0")
+		self.post_condition.set_BP(0)
 		self.post_condition.set_P(self.pre_condition.P)
 		self.post_condition.set_I(self.pre_condition.I + 1)
+		self.post_condition.set_prefixP(self.pre_condition.prefixP)
 
 class Si1(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, parent: Instruction = None):
@@ -183,42 +229,11 @@ class Si1(Instruction):
 			assert(type(child) != Accolade)
 		assert(type(self.children[-1]) == Accolade)
 	def gen_post_condition(self):
-		self.post_condition.set_BP("1")
+		self.post_condition.set_BP(1)
 		self.post_condition.set_P(self.pre_condition.P)
 		self.post_condition.set_I(self.pre_condition.I + 1)
+		self.post_condition.set_prefixP(self.pre_condition.prefixP)
 
-class Boucle(Instruction):
-	def __init__(self, instruction_n: int, line_n: int, parent: Instruction = None):
-		super().__init__(instruction_n, line_n, parent)
-		self.children: List(Instruction) = []
-	def to_string(self) -> str:
-		return "boucle"
-	def add_child(self, child):
-		self.children.append(child)
-	def valid(self):
-		for child in self.children[:-1]:
-			assert(type(child) != Accolade)
-		assert(type(self.children[-1]) == Accolade)
-		fin = False
-		# Trouver le mot-clé fin
-		has_fin = self.search_fin(self.children[:-1])
-		assert(has_fin)
-	def search_fin(self, children) -> bool:
-		for child in children:
-			if type(child) == Fin:
-				return True
-			else:
-				if type(child) in (Si0, Si1, Boucle):
-					if self.search_fin(child.children):
-						return True
-		return False
-	def to_python(self, indent: int) -> str:
-		res = super().get_python_pre_assertion(indent)
-		return res + super().nt(indent) + "while True:"
-	def gen_post_condition(self):
-		self.post_condition.set_BP(self.pre_condition.BP)
-		self.post_condition.set_P(self.pre_condition.P)
-		self.post_condition.set_I(self.pre_condition.I + 1)
 
 class Fin(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, fin_boucle: bool = True, parent: Instruction = None):
@@ -244,6 +259,48 @@ class Fin(Instruction):
 				parent = parent.parent
 			end_of_program = parent.children[-1]
 			self.post_condition.set_I(end_of_program.instruction_n)
+		self.post_condition.set_prefixP(self.pre_condition.prefixP)
+class Boucle(Instruction):
+	def __init__(self, instruction_n: int, line_n: int, parent: Instruction = None):
+		super().__init__(instruction_n, line_n, parent)
+		self.children: List(Instruction) = []
+	def to_string(self) -> str:
+		return "boucle"
+	def add_child(self, child):
+		self.children.append(child)
+	def valid(self):
+		for child in self.children[:-1]:
+			assert(type(child) != Accolade)
+		assert(type(self.children[-1]) == Accolade)
+		fin = False
+		# Trouver le mot-clé fin
+		has_fin = self.search_fin(self.children[:-1])
+		assert(has_fin)
+	def search_fin(self, children) -> bool:
+		for child in children:
+			if type(child) == Fin:
+				return True
+			else:
+				if type(child) in (Si0, Si1, Boucle):
+					if self.search_fin(child.children):
+						return True
+		return False
+	def get_fins(self, children, fins = []) -> List[Fin]:
+		for child in children:
+			if type(child) == Fin:
+				fins.append(child)
+			else:
+				if type(child) in (Si0, Si1, Boucle):
+					self.get_fins(children, fins)
+		return fins
+	def to_python(self, indent: int) -> str:
+		res = super().get_python_pre_assertion(indent)
+		return res + super().nt(indent) + "while True:"
+	def gen_post_condition(self):
+		self.post_condition.set_BP(self.pre_condition.BP)
+		self.post_condition.set_P(self.pre_condition.P)
+		self.post_condition.set_I(self.pre_condition.I + 1)
+		self.post_condition.set_prefixP(self.pre_condition.prefixP)
 
 class Zero(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, parent: Instruction = None):
@@ -254,9 +311,10 @@ class Zero(Instruction):
 		res = super().get_python_pre_assertion(indent)
 		return res + super().nt(indent) + "BANDE[POS] = 0"
 	def gen_post_condition(self): 
-		self.post_condition.set_BP("0")
+		self.post_condition.set_BP(0)
 		self.post_condition.set_P(self.pre_condition.P)
 		self.post_condition.set_I(self.pre_condition.I + 1)
+		self.post_condition.set_prefixP(self.pre_condition.prefixP)
 
 class Un(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, parent: Instruction = None):
@@ -267,9 +325,10 @@ class Un(Instruction):
 		res = super().get_python_pre_assertion(indent)
 		return res + super().nt(indent) + "BANDE[POS] = 1"
 	def gen_post_condition(self):
-		self.post_condition.set_BP("1")
+		self.post_condition.set_BP(1)
 		self.post_condition.set_P(self.pre_condition.P)
 		self.post_condition.set_I(self.pre_condition.I + 1)
+		self.post_condition.set_prefixP(self.pre_condition.prefixP)
 
 class Gauche(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, parent: Instruction = None):
@@ -280,9 +339,10 @@ class Gauche(Instruction):
 		res = super().get_python_pre_assertion(indent)
 		return res + super().nt(indent) + "POS -= 1"
 	def gen_post_condition(self):
-		self.post_condition.set_BP('{0, 1}')
-		self.post_condition.set_P(self.pre_condition.P - 1)
+		self.post_condition.set_BP({0, 1})
+		self.post_condition.set_P({P - 1 for P in self.pre_condition.P})
 		self.post_condition.set_I(self.pre_condition.I + 1)
+		self.post_condition.set_prefixP(self.pre_condition.prefixP)
 		
 
 class Droite(Instruction):
@@ -294,9 +354,10 @@ class Droite(Instruction):
 		res = super().get_python_pre_assertion(indent)
 		return res + super().nt(indent) + "POS += 1"
 	def gen_post_condition(self):
-		self.post_condition.set_BP('{0, 1}')
-		self.post_condition.set_P(self.pre_condition.P + 1)
+		self.post_condition.set_BP({0, 1})
+		self.post_condition.set_P({P + 1 for P in self.pre_condition.P})
 		self.post_condition.set_I(self.pre_condition.I + 1)
+		self.post_condition.set_prefixP(self.pre_condition.prefixP)
 
 class Pause(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, parent: Instruction = None):
@@ -310,6 +371,7 @@ class Pause(Instruction):
 		self.post_condition.set_BP(self.pre_condition.BP)
 		self.post_condition.set_P(self.pre_condition.P)
 		self.post_condition.set_I(self.pre_condition.I + 1)
+		self.post_condition.set_prefixP(self.pre_condition.prefixP)
 
 class Imprime(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, parent: Instruction = None):
@@ -325,6 +387,7 @@ class Imprime(Instruction):
 		self.post_condition.set_BP(self.pre_condition.BP)
 		self.post_condition.set_P(self.pre_condition.P)
 		self.post_condition.set_I(self.pre_condition.I + 1)
+		self.post_condition.set_prefixP(self.pre_condition.prefixP)
 
 class Accolade(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, parent: Instruction = None):
@@ -345,6 +408,7 @@ class Accolade(Instruction):
 		else:
 			print("Accolade hors d'une Boucle ou d'un Si.")
 			sys.exit(1)
+		self.post_condition.set_prefixP(self.pre_condition.prefixP)
 
 class Hashtag(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, parent: Instruction = None):
@@ -360,3 +424,4 @@ class Hashtag(Instruction):
 		self.post_condition.set_BP(self.pre_condition.BP)
 		self.post_condition.set_P(self.pre_condition.P)
 		self.post_condition.set_I(-1) # No next
+		self.post_condition.set_prefixP(self.pre_condition.prefixP)
