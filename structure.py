@@ -118,32 +118,6 @@ class Instruction:
 		else:
 			if self.parent != None:
 				self.previous.append(self.parent)
-	# Same function for every inherited classes
-	"""
-	def gen_pre_condition(self):
-		if self.prev_sibling() == None:
-			if self.parent != None:
-				# If is first child right after Boucle or Si0 Si1:
-				self.pre_condition.set_P(self.parent.post_condition.P)
-				self.pre_condition.set_BP(self.parent.post_condition.BP)
-				self.pre_condition.set_I(self.instruction_n)
-				self.pre_condition.set_prefixP(self.parent.post_condition.prefixP)
-		else:
-			if type(self.prev_sibling()) == Boucle:
-				self.pre_condition.set_P(self.prev_sibling().post_condition.P) # We do not know where P is at this point.
-				self.pre_condition.set_prefixP(" + m")
-				self.pre_condition.set_BP({0, 1})
-			elif type(self.prev_sibling()) in (Si0, Si1):
-				self.pre_condition.set_P(self.prev_sibling().post_condition.P)
-				self.pre_condition.set_prefixP(" + m")
-				#self.pre_condition.set_BP(self.prev_sibling().post_condition.BP)
-				self.pre_condition.set_BP({0, 1})
-			else: # If has previous sibling that is not Boucle, Si0, Si1:
-				self.pre_condition.set_P(self.prev_sibling().post_condition.P)
-				self.pre_condition.set_BP(self.prev_sibling().post_condition.BP)
-				self.pre_condition.set_I(self.instruction_n)
-				self.pre_condition.set_prefixP(self.prev_sibling().post_condition.prefixP)
-	"""
 	# Function that fusions pre-conditions of every possible previous member.
 	def gen_pre_condition(self):
 		self.gen_previous()
