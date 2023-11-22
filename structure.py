@@ -54,8 +54,6 @@ class Condition:
 	def or_condition(self, condition):
 		self.P = self.P.union(condition.P)
 		self.BP = self.BP.union(condition.BP)
-	def copy(self):
-		return Condition(self.I, self.BP, self.P, self.prefixP)
 
 class Instruction:
 	def __init__(self, instruction_n: int, line_n: int, parent = None):
@@ -98,8 +96,18 @@ class Instruction:
 		return parent
 	def get_end_boucle(self): # Returns Instruction
 		parent = self
+		stack = [parent]
+		while type(parent) != Root:
+			stack.append(parent)
+			parent = parent.parent
+		"""
 		while type(parent) != Boucle:
 			parent = parent.parent
+		"""
+		i = len(stack) - 1
+		while type(stack[i]) != Boucle:
+			i -= 1
+		parent = stack[i]
 		end_boucle = parent.next_sibling()
 		return end_boucle
 	def gen_previous(self):
@@ -122,12 +130,6 @@ class Instruction:
 	def gen_pre_condition(self, gen_previous=True):
 		if gen_previous:
 			self.gen_previous()
-		if (self.instruction_n == 4):
-			print(type(self))
-			print("previous:", self.previous)
-			print("prev_sibling:", self.prev_sibling())
-			for prev in self.previous:
-				print(prev.pre_condition.to_string(), prev.post_condition.to_string())
 		if len(self.previous) == 0:
 			self.pre_condition.set_P(self.parent.post_condition.P)
 			self.pre_condition.set_BP(self.parent.post_condition.BP)
@@ -135,15 +137,16 @@ class Instruction:
 			self.pre_condition.set_prefixP(self.parent.post_condition.prefixP)
 		else:
 			if type(self.previous[0]) not in (Si0, Si1) or self.previous[0] != self.prev_sibling():
-				self.pre_condition = self.previous[0].post_condition
+				self.pre_condition.set_P(self.previous[0].post_condition.P)
+				self.pre_condition.set_BP(self.previous[0].post_condition.BP)
 			elif self.previous[0].post_condition_else != None:
-				print(type(self.previous[0]),self.previous[0].post_condition_else)
-				self.pre_condition = self.previous[0].post_condition_else
+				self.pre_condition.set_P(self.previous[0].post_condition_else.P)
+				self.pre_condition.set_BP(self.previous[0].post_condition_else.BP)
 			else:
 				self.previous.pop(0)
 				self.gen_pre_condition(False)
 				return
-			self.pre_condition.set_I(self.instruction_n)
+			#self.pre_condition.set_I(self.instruction_n)
 			for prev in self.previous[1:]:
 				self.pre_condition.or_condition(prev.post_condition)
 			for prev in self.previous[1:]:
@@ -244,7 +247,6 @@ class Si0(Instruction):
 			P = self.pre_condition.P
 			prefixP = self.pre_condition.prefixP
 			self.post_condition_else = Condition(I, BP, P, prefixP)
-			print(f"on a ajouté post condition else à Si0: {self}")
 
 class Si1(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, parent: Instruction = None):
