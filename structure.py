@@ -119,19 +119,34 @@ class Instruction:
 			if self.parent != None:
 				self.previous.append(self.parent)
 	# Function that fusions pre-conditions of every possible previous member.
-	def gen_pre_condition(self):
-		self.gen_previous()
+	def gen_pre_condition(self, gen_previous=True):
+		if gen_previous:
+			self.gen_previous()
+		if (self.instruction_n == 4):
+			print(type(self))
+			print("previous:", self.previous)
+			print("prev_sibling:", self.prev_sibling())
+			for prev in self.previous:
+				print(prev.pre_condition.to_string(), prev.post_condition.to_string())
 		if len(self.previous) == 0:
 			self.pre_condition.set_P(self.parent.post_condition.P)
 			self.pre_condition.set_BP(self.parent.post_condition.BP)
 			self.pre_condition.set_I(self.instruction_n)
 			self.pre_condition.set_prefixP(self.parent.post_condition.prefixP)
 		else:
-			self.pre_condition = self.previous[0].post_condition.copy()
+			if type(self.previous[0]) not in (Si0, Si1) or self.previous[0] != self.prev_sibling():
+				self.pre_condition = self.previous[0].post_condition
+			elif self.previous[0].post_condition_else != None:
+				print(type(self.previous[0]),self.previous[0].post_condition_else)
+				self.pre_condition = self.previous[0].post_condition_else
+			else:
+				self.previous.pop(0)
+				self.gen_pre_condition(False)
+				return
 			self.pre_condition.set_I(self.instruction_n)
 			for prev in self.previous[1:]:
 				self.pre_condition.or_condition(prev.post_condition)
-			for prev in self.previous:
+			for prev in self.previous[1:]:
 				if type(prev) in (Si0, Si1):
 					# if Si0 or Si1 test were not valid
 					self.pre_condition.or_condition(prev.post_condition_else)
@@ -190,7 +205,7 @@ class Root(Instruction):
 			ins = self
 		dico = {}
 		for child in ins.children:
-			if type(child) in (Si0, Si1):
+			if type(child) in (Si0, Si1) and child.post_condition_else != None:
 				child_post_cond = child.post_condition.to_string_else(child.post_condition_else)
 			else:
 				child_post_cond = child.post_condition.to_string()
@@ -205,7 +220,7 @@ class Si0(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, parent: Instruction = None):
 		super().__init__(instruction_n, line_n, parent)
 		self.children: List(Instruction) = []
-		self.pos_condition_else = None
+		self.post_condition_else = None
 	def to_string(self) -> str:
 		return "si (0)"
 	def add_child(self, child):
@@ -229,12 +244,13 @@ class Si0(Instruction):
 			P = self.pre_condition.P
 			prefixP = self.pre_condition.prefixP
 			self.post_condition_else = Condition(I, BP, P, prefixP)
+			print(f"on a ajouté post condition else à Si0: {self}")
 
 class Si1(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, parent: Instruction = None):
 		super().__init__(instruction_n, line_n, parent)
 		self.children: List(Instruction) = []
-		self.pos_condition_else = None
+		self.post_condition_else = None
 	def to_string(self) -> str:
 		return "si (1)"
 	def add_child(self, child):
@@ -258,7 +274,6 @@ class Si1(Instruction):
 			P = self.pre_condition.P
 			prefixP = self.pre_condition.prefixP
 			self.post_condition_else = Condition(I, BP, P, prefixP)
-
 
 class Fin(Instruction):
 	def __init__(self, instruction_n: int, line_n: int, fin_boucle: bool = True, parent: Instruction = None):
