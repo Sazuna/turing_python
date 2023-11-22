@@ -3,8 +3,6 @@
 
 import sys
 
-import os
-
 import tokenize
 
 import entities
@@ -19,15 +17,16 @@ def main(file):
 	#print(turing.print_program()) # Simplified version of the program
 	# (without comments etc) and better indentation.
 	# TODO: repair this function (it's broken now)
+	basename = '.'.join(file.split('.')[:-1])
 
-	python_file = os.path.basename(file) + ".py"
+	python_file = basename + ".py"
 	#print(turing.program_to_python()) # Program converted to python.
 	with open(python_file, 'w') as f:
 		f.write(turing.program_to_python())
 
 	turing.gen_pre_pos_conditions()
 
-	conditions_file = os.path.basename(file) + ".conditions.tsv"
+	conditions_file = basename + ".conditions.tsv"
 
 	dico = turing.get_pre_pos_conditions()
 	with open(conditions_file, 'w') as f:
@@ -35,7 +34,7 @@ def main(file):
 		for i in range(1, len(dico)+1):
 			f.write(f"{i}\t{dico[i][0]}\t{dico[i][1]}\t{dico[i][2]}\n")
 
-	assertions_file = os.path.basename(file) + ".assertions.py"
+	assertions_file = basename + ".assertions.py"
 	with open(assertions_file, 'w') as f:
 		f.write(turing.program_to_python()) # Program converted to python but with pre-assertions generated.
 
