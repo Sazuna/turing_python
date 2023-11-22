@@ -96,18 +96,18 @@ class Instruction:
 		return parent
 	def get_end_boucle(self): # Returns Instruction
 		parent = self
-		stack = [parent]
+		stack = []
 		while type(parent) != Root:
 			stack.append(parent)
 			parent = parent.parent
-		"""
-		while type(parent) != Boucle:
-			parent = parent.parent
-		"""
-		i = len(stack) - 1
-		while type(stack[i]) != Boucle:
+		if len(stack) == 0:
+			return None
+		i = len(stack)
+		while type(stack[i-1]) != Boucle:
 			i -= 1
-		parent = stack[i]
+			if i == 0:
+				return None
+		parent = stack[i-1]
 		end_boucle = parent.next_sibling()
 		return end_boucle
 	def gen_previous(self):
@@ -185,11 +185,15 @@ class Root(Instruction):
 		res += "POS=50\n"
 		res += "MAX=100\n"
 		res += "BANDE = [0] * MAX\n"
-		res += "pos = 51\n"
+		res += "pos = POS\n"
 		res += "for chiffre in sys.argv[1:]:\n"
+
 		res += "\tchiffre = int(chiffre)\n"
-		res += "\tprint(chiffre)\n"
 		res += "\tfor i in range(0, chiffre+1):\n"
+		res += "\t\tif pos + i >= MAX:\n"
+		res += "\t\t\tADD = (pos + i + 1) - MAX\n"
+		res += "\t\t\tMAX += ADD\n"
+		res += "\t\t\tBANDE.extend([0] * ADD)\n"
 		res += "\t\tBANDE[pos + i] = 1\n"
 		res += "\tpos += i + 3\n"
 		return res
@@ -303,6 +307,7 @@ class Fin(Instruction):
 	def gen_post_condition(self):
 		self.post_condition.set_BP(self.pre_condition.BP)
 		self.post_condition.set_P(self.pre_condition.P)
+		# TODO appeler self.get_end_boucle() avant et tester si c'est à None
 		if self.fin_boucle:
 			fin_boucle = self.get_end_boucle()
 			self.post_condition.set_I(fin_boucle.instruction_n)
@@ -392,7 +397,12 @@ class Gauche(Instruction):
 		return "G"
 	def to_python(self, indent: int) -> str:
 		res = super().get_python_pre_assertion(indent)
-		return res + super().nt(indent) + "POS -= 1"
+		res += super().nt(indent) + "POS -= 1"
+		res += super().nt(indent) + "if POS < 0:"
+		res += super().nt(indent) + "\tPOS = 0"
+		res += super().nt(indent) + "\tMAX += 1"
+		res += super().nt(indent) + "\tBANDE.insert(0, 0)"
+		return res
 	def gen_post_condition(self):
 		self.post_condition.set_BP({0, 1})
 		self.post_condition.set_P({P - 1 for P in self.pre_condition.P})
@@ -407,7 +417,11 @@ class Droite(Instruction):
 		return "D"
 	def to_python(self, indent: int) -> str:
 		res = super().get_python_pre_assertion(indent)
-		return res + super().nt(indent) + "POS += 1"
+		res += super().nt(indent) + "POS += 1"
+		res += super().nt(indent) + "if POS >= MAX:"
+		res += super().nt(indent) + "\tMAX += 1"
+		res += super().nt(indent) + "\tBANDE.append(0)"
+		return res
 	def gen_post_condition(self):
 		self.post_condition.set_BP({0, 1})
 		self.post_condition.set_P({P + 1 for P in self.pre_condition.P})

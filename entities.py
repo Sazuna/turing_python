@@ -43,7 +43,7 @@ def call(token, tokens, program, fin_boucle: bool):
 		case 'boucle':
 			boucle_ = Boucle(token[2], token[1], program)
 			program.add_child(boucle_)
-			return boucle(token, tokens, boucle_, True)
+			return boucle(token, tokens, boucle_, fin_boucle)
 		case 'si (0)':
 			si_0 = Si0(token[2], token[1], program)
 			program.add_child(si_0)
@@ -53,6 +53,7 @@ def call(token, tokens, program, fin_boucle: bool):
 			program.add_child(si_1)
 			return si1(token, tokens, si_1, fin_boucle)
 		case 'fin':
+			print("fin:", fin_boucle)
 			program.add_child(Fin(token[2], token[1], fin_boucle, program))
 			return fin(tokens, program, fin_boucle)
 		case '}':
@@ -88,6 +89,8 @@ def droite(tokens, program, fin_boucle):
 	return call(token, tokens, program, fin_boucle)
 
 def boucle(old_token, tokens, program, fin_boucle):
+	old_fin_boucle = fin_boucle
+	print("fin boucle:", fin_boucle)
 	token = next_token(tokens)
 	fin = call(token, tokens, program, True) # True = in boucle
 	if "fin" not in fin:
@@ -99,7 +102,7 @@ def boucle(old_token, tokens, program, fin_boucle):
 		invalide(old_token)
 	program = program.parent
 	token = next_token(tokens, old_token)
-	return fin[:-1] + call(token, tokens, program, fin_boucle)
+	return fin[:-1] + call(token, tokens, program, old_fin_boucle)
 	# supprime juste l'accolade
 
 def fin(tokens, program, fin_boucle):
