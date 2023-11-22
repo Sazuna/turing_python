@@ -1,5 +1,8 @@
 # turing_python
 
+## Author
+Liza FRETEL
+
 ## Usage
 
 python main.py PROGRAM.TS
