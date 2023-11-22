@@ -185,6 +185,13 @@ class Root(Instruction):
 		res += "POS=50\n"
 		res += "MAX=100\n"
 		res += "BANDE = [0] * MAX\n"
+		res += "pos = 51\n"
+		res += "for chiffre in sys.argv[1:]:\n"
+		res += "\tchiffre = int(chiffre)\n"
+		res += "\tprint(chiffre)\n"
+		res += "\tfor i in range(0, chiffre+1):\n"
+		res += "\t\tBANDE[pos + i] = 1\n"
+		res += "\tpos += i + 3\n"
 		return res
 	def print_program(self, ins: Instruction = None, indent: int = 0):
 		if ins == None:
@@ -342,7 +349,7 @@ class Boucle(Instruction):
 	def to_python(self, indent: int) -> str:
 		res = super().get_python_pre_assertion(indent)
 		res += super().nt(indent) + "while True:"
-		res += super().nt(indent) + "\tpass" # if must have minimum one instruction inside of it
+		res += super().nt(indent) + "\tpass" # Boucle must have minimum one instruction inside of it
 		return res
 	def gen_post_condition(self):
 		self.post_condition.set_BP(self.pre_condition.BP)
