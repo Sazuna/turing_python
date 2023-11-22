@@ -161,6 +161,14 @@ class Instruction:
 			return self.nt(indent) + f"assert(BANDE[POS] == {sorted(self.pre_condition.BP)[0]})"
 		return ""
 
+	### This function is never called because it will result in the same as pre_assertion
+	def get_python_post_assertion(self, indent) -> str:
+		if len(self.post_condition.BP) == 1 and (type(self) not in (Si0, Si1) or self.post_condition_else == None):
+			return self.nt(indent) + f"assert(BANDE[POS] == {sorted(self.pre_condition.BP)[0]})"
+		if len(self.post_condition.BP) == 1 and (type(self) in (Si0, Si1) and self.post_condition_else != None and self.post_condition.BP == self.post_condition_else.BP):
+			return self.nt(indent) + f"assert(BANDE[POS] == {sorted(self.pre_condition.BP)[0]})"
+		return ""
+
 class Root(Instruction):
 	def __init__(self):
 		super().__init__(0, 0)
