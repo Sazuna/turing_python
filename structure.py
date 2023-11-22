@@ -230,7 +230,9 @@ class Si0(Instruction):
 		self.children.append(child)
 	def to_python(self, indent: int) -> str:
 		res = super().get_python_pre_assertion(indent)
-		return res + super().nt(indent) + "if BANDE[POS] == 0:"
+		res += super().nt(indent) + "if BANDE[POS] == 0:"
+		res += super().nt(indent) + "\tpass" # if must have minimum one instruction inside of it
+		return res
 	def valid(self):
 		for child in self.children[:-1]:
 			assert(type(child) != Accolade)
@@ -259,7 +261,9 @@ class Si1(Instruction):
 		self.children.append(child)
 	def to_python(self, indent) -> str:
 		res = super().get_python_pre_assertion(indent)
-		return res + super().nt(indent) + "if BANDE[POS] == 1:"
+		res += super().nt(indent) + "if BANDE[POS] == 1:"
+		res += super().nt(indent) + "\tpass" # if must have minimum one instruction inside of it
+		return res
 	def valid(self):
 		for child in children[:-1]:
 			assert(type(child) != Accolade)
@@ -337,7 +341,9 @@ class Boucle(Instruction):
 		return fins
 	def to_python(self, indent: int) -> str:
 		res = super().get_python_pre_assertion(indent)
-		return res + super().nt(indent) + "while True:"
+		res += super().nt(indent) + "while True:"
+		res += super().nt(indent) + "\tpass" # if must have minimum one instruction inside of it
+		return res
 	def gen_post_condition(self):
 		self.post_condition.set_BP(self.pre_condition.BP)
 		self.post_condition.set_P(self.pre_condition.P)
