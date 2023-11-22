@@ -53,7 +53,6 @@ def call(token, tokens, program, fin_boucle: bool):
 			program.add_child(si_1)
 			return si1(token, tokens, si_1, fin_boucle)
 		case 'fin':
-			print("fin:", fin_boucle)
 			program.add_child(Fin(token[2], token[1], fin_boucle, program))
 			return fin(tokens, program, fin_boucle)
 		case '}':
@@ -90,7 +89,6 @@ def droite(tokens, program, fin_boucle):
 
 def boucle(old_token, tokens, program, fin_boucle):
 	old_fin_boucle = fin_boucle
-	print("fin boucle:", fin_boucle)
 	token = next_token(tokens)
 	fin = call(token, tokens, program, True) # True = in boucle
 	if "fin" not in fin:

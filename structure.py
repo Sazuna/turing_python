@@ -307,7 +307,6 @@ class Fin(Instruction):
 	def gen_post_condition(self):
 		self.post_condition.set_BP(self.pre_condition.BP)
 		self.post_condition.set_P(self.pre_condition.P)
-		# TODO appeler self.get_end_boucle() avant et tester si c'est à None
 		if self.fin_boucle:
 			fin_boucle = self.get_end_boucle()
 			self.post_condition.set_I(fin_boucle.instruction_n)
