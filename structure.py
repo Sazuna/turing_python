@@ -157,8 +157,8 @@ class Instruction:
 			self.pre_condition.set_prefixP(" + m")
 
 	def get_python_pre_assertion(self, indent) -> str:
-		if self.pre_condition.BP in ('0', '1'):
-			return self.nt(indent) + f"assert(BANDE[POS] == {self.pre_condition.BP})"
+		if len(self.pre_condition.BP) == 1:
+			return self.nt(indent) + f"assert(BANDE[POS] == {sorted(self.pre_condition.BP)[0]})"
 		return ""
 
 class Root(Instruction):
@@ -463,9 +463,7 @@ class Accolade(Instruction):
 	def to_string(self) -> str:
 		return "}"
 	def to_python(self, indent: int) -> str:
-		res = super().get_python_pre_assertion(indent)
-		return res
-		return "" # If we do not want to print pre-assertion before }
+		return "" # We do not want to print pre-assertion before }
 	def gen_post_condition(self):
 		self.post_condition.set_BP(self.pre_condition.BP)
 		self.post_condition.set_P(self.pre_condition.P)
